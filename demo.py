@@ -8,7 +8,11 @@ from urlHander import UrlHander
 
 def index():
     dao=UrlHander()
-    dao.dealAccess("/ui/ui/__init__(None,None)")
+    result=dao.dealAccess("/ui/ui/hello")
+    print result.DATA
+    
+    result=dao.dealAccess("/ui/ui/index")
+    print result.DATA
     
 if __name__ == "__main__":
     index()

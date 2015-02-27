@@ -1,10 +1,16 @@
 #coding:UTF-8
 
-class Ui():
+from urlHander import Action
+
+class Ui(Action):
     def __init__(self,request,data):
-        self.__request=request
+        Action.__init__(self,request,data)
+        self.__data=data
     def index(self):
-        print '123',self.__request['getArgv'].get(2,"unknow")
+        self._write(u"测试")
+        return self
     def hello(self):
         print "hello"
+        self._display()
+        return self
         

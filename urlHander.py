@@ -6,13 +6,13 @@ url自动化映射函数
 """
 
 
-import os,re,inspect
+import os,re,inspect,urllib,traceback
 
 
 class ClearPycFile():
-    def __init__(self,debug):
+    def __init__(self,debug,path):
         self.__debug=debug
-        self.__index(os.path.dirname(os.path.realpath(__file__)))
+        self.__index(path)
     def __index(self,path):
         if(os.path.exists(path) and os.path.isdir(path)):
             fps=os.listdir(path)
@@ -26,11 +26,40 @@ class ClearPycFile():
                 else:
                     self.__index(filePath)
 
+class Action():
+    "action类"
+    def __init__(self,request,data):
+        self.__templatePath=request['templatePath']
+        self.__debug=request['debug']
+        self.__actionPath=request['actionPath']
+        self.DATA=""
+        self.STATUS=['200','ok']
+        if(self.__debug):
+            print "load class Action"
+    def __getContentFromFile(self,actionPath=None):
+        "从文件读取内容"
+        if(actionPath==None):
+            actionPath=self.__actionPath
+        fp=open(self.__templatePath+actionPath,'r')
+        text=fp.read()
+        fp.close()
+        return text
+    def __render(self,data):
+        "渲染模板"
+        return data
+    def _write(self,data):
+        if(type(data).__name__=="unicode"):
+            data=data.encode("UTF-8")
+        self.DATA=self.DATA+data
+    def _display(self,path=None):
+        text=self.__getContentFromFile(path)
+        self.DATA=self.__render(text)
+        
 class UrlHander():
     "url自动化映射类"
     def __init__(self):
         self.__setDefaultConfig()
-        temp=ClearPycFile(self.__debug)
+        temp=ClearPycFile(self.__debug,self.__classPath)
         self.__loadAllClass()
     def __log(self,data):
         "调试信息输出"
@@ -113,22 +142,24 @@ class UrlHander():
             dirPath=self.__classPath+"/"+temp
             if(os.path.isdir(dirPath)):
                 self.__loadAllClassInAllDirs(dirPath)
-    def __useMethodFromUrl(self,method,request,data):
+    def __useMethodFromUrl(self,method,data):
         "根据url调用函数"
         try:
             
             for temp in self.__beforeExecuteMethod:
-                result=temp(request,data)
+                result=temp(data)
                 if(result!=None):
                     return result
             
             result=method()
             
             for temp in self.__afterExecuteMethod:
-                result=temp(request,result,data)
+                result=temp(data,result)
             
             return result
         except:
+            if(self.__debug):
+                print traceback.format_exc()
             return self.__serviceError()
     def __dealBadFunction(self,methodName):
         "防止调用特别函数"
@@ -146,9 +177,7 @@ class UrlHander():
         self.__afterExecuteMethod.append(method)
     def dealAccess(self,fullUrl,data=None):
         "处理访问"
-        getArgv={}
         url=fullUrl
-        
         urls=url.split("/")
         if(len(urls)==2):
             key="/index/index"
@@ -174,19 +203,21 @@ class UrlHander():
         if(methodName==""):
             methodName="index"
         
-        
-        
+        #输出执行结果
         if(self.__debug):
             self.__log(u"要访问的路径："+fullUrl)
             self.__log(u"映射函数："+key+"/"+methodName)
         
         if(self.__urlObjMap.has_key(key)):
             obj=self.__urlObjMap[key]
+            templatePath=self.__templatePath
+            debug=self.__debug
+            actionPath=key+"/"+methodName+".html"
+            request={'templatePath':self.__templatePath,"debug":debug,'actionPath':actionPath}
             try:
-                request={'getArgv':getArgv,'fullPath':fullUrl,'ragetUrl':key+"/"+methodName}
                 dao=obj(request,data)
                 method=getattr(dao,methodName)
-                self.__useMethodFromUrl(method,request,data)
+                return self.__useMethodFromUrl(method,data)
             except:
                 "触发404"
                 return self.__notFound()
