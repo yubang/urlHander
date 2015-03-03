@@ -31,6 +31,10 @@ class ClearPycFile():
                 else:
                     self.__index(filePath)
 
+class TempAction():
+    DATA=""
+    STATUS=['200','ok!']
+                    
 class Action():
     "action类"
     def __init__(self,request,data):
@@ -81,10 +85,16 @@ class UrlHander():
             print data
     def __notFoundMethod(self):
         self.__log("404 not found!")
-        return "404"
+        obj=TempAction()
+        obj.DATA="404 not found!"
+        obj.STATUS=['404','not found!']
+        return obj
     def __serviceErrorMethod(self):
         self.__log("server error!")
-        return "500"
+        obj=TempAction()
+        obj.DATA="server error!"
+        obj.STATUS=['500','server error!']
+        return obj
     def __setDefaultConfig(self):
         "设置默认"
         nowPath=os.path.dirname(os.path.realpath(__file__))+"/"

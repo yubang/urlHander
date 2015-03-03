@@ -11,7 +11,7 @@ def index():
     result=dao.dealAccess("/ui/ui/hello")
     print result.DATA
     
-    result=dao.dealAccess("/ui/ui/index")
+    result=dao.dealAccess("/ui/ui/__index")
     print result.DATA
     
 if __name__ == "__main__":
