@@ -187,12 +187,7 @@ class UrlHander():
             return self.__serviceError()
     def __dealBadFunction(self,methodName):
         "防止调用特别函数"
-        if(methodName=="__init__"):
-            return "index"
-        elif(methodName=="__del__"):
-            return "index"
-        else:
-            return methodName
+        return re.sub(r'^[_]*','',methodName)
     def addBeforeExceute(self,method):
         "添加中间方法，在函数执行前"
         self.__beforeExecuteMethod.append(method)
