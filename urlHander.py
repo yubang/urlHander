@@ -5,6 +5,11 @@ url自动化映射函数
 @author:yubang
 """
 
+"""
+ClearPycFile仅仅为了清除pyc文件
+Action类封装基本的渲染模板和追加内容输出，不建议直接继承，生产环境建议自定义一个类继承该类，然后继承自定义类
+UrlHander为自动化加载action类，生产环境建议不要重复创建
+"""
 
 import os,re,inspect,urllib,traceback
 
@@ -32,6 +37,8 @@ class Action():
         self.__templatePath=request['templatePath']
         self.__debug=request['debug']
         self.__actionPath=request['actionPath']
+        self.__data={}
+        self.__obj=data#封装传入的参数
         self.DATA=""
         self.STATUS=['200','ok']
         if(self.__debug):
@@ -46,12 +53,19 @@ class Action():
         return text
     def __render(self,data):
         "渲染模板"
+        from jinja2 import Template
+        template = Template(data.decode("UTF-8"))
+        data=template.render(self.__data)
         return data
     def _write(self,data):
         if(type(data).__name__=="unicode"):
             data=data.encode("UTF-8")
         self.DATA=self.DATA+data
+    def _assign(self,key,value):
+        "设置变量"
+        self.__data['key']=value
     def _display(self,path=None):
+        "读入文件与渲染模板"
         text=self.__getContentFromFile(path)
         self.DATA=self.__render(text)
         
