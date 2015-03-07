@@ -108,6 +108,8 @@ class UrlHander():
         self.__afterExecuteMethod=[]
     def __getObjFromModule(self,module,className):
         "从模块获取类"
+        if(self.__debug):
+            reload(module)
         for temp in dir(module):
             if(inspect.isclass(getattr(module,temp))):
                 if(temp==className):
@@ -139,9 +141,9 @@ class UrlHander():
         
         #加载模块
         m=__import__(modulePath)
-        m=getattr(m,dirName)
         #获取类
         obj=self.__getObjFromModule(m,newClassName)
+        
         
         #保存对象
         if(obj!=None):
