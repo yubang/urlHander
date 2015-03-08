@@ -32,17 +32,20 @@ class ClearPycFile():
                     self.__index(filePath)
 
 class TempAction():
+    META={}
     DATA=""
     STATUS=['200','ok!']
                     
 class Action():
     "action类"
     def __init__(self,request,data):
+        self.META={}
         self.__templatePath=request['templatePath']
         self.__debug=request['debug']
         self.__actionPath=request['actionPath']
         self.__data={}
-        self.__obj=data#封装传入的参数
+        self._obj=data#封装传入的参数
+        self._db=data.get("db",None)
         self.DATA=""
         self.STATUS=['200','ok']
         if(self.__debug):
@@ -67,7 +70,7 @@ class Action():
         self.DATA=self.DATA+data
     def _assign(self,key,value):
         "设置变量"
-        self.__data['key']=value
+        self.__data[key]=value
     def _display(self,path=None):
         "读入文件与渲染模板"
         text=self.__getContentFromFile(path)
@@ -106,6 +109,18 @@ class UrlHander():
         self.__serviceError=self.__serviceErrorMethod
         self.__beforeExecuteMethod=[]
         self.__afterExecuteMethod=[]
+        self.__metaDict={
+            'css':'text/css',
+            'js':'application/x-javascript',
+            'gif':'image/gif',
+            'html':'text/html',
+            'htm':'text/html',
+            'jpeg':'image/jpeg',
+            'jpg':'image/jpeg',
+            'png':'image/png',
+        }
+        
+                    
     def __getObjFromModule(self,module,className):
         "从模块获取类"
         if(self.__debug):
@@ -190,16 +205,55 @@ class UrlHander():
     def __dealBadFunction(self,methodName):
         "防止调用特别函数"
         return re.sub(r'^[_]*','',methodName)
+    def __dealStatic(self,url):
+        "处理静态资源，仅仅为了开发，生产环境不调用"
+        if(self.__debug==False):
+            return False,None
+        else:
+            if(re.search(r'^/static/',url)):
+                filePath="."+url
+                if(os.path.exists(filePath)):
+                    obj=TempAction()
+                    fp=open(filePath,'rb')
+                    obj.DATA=fp.read()
+                    fp.close()
+                    
+                    #设置meta
+                    for temp in self.__metaDict:
+                        if(re.search("\."+temp+"$",url)):
+                            obj.META['Content-Type']=self.__metaDict[temp]
+                        
+                    return True,obj
+                else:
+                    return True,self.__notFoundMethod()
+            else:
+                return False,None
     def addBeforeExceute(self,method):
         "添加中间方法，在函数执行前"
         self.__beforeExecuteMethod.append(method)
     def addAfterExceute(self,method):
         "添加中间方法，在函数执行后"
         self.__afterExecuteMethod.append(method)
+    def setDebug(self,sign):
+        "打开或关闭调试"
+        self.__debug=sign
+    def setTemplatePath(self,path):
+        "设置模版位置"
+        self.__templatePath=path
+    def setClassPath(self,path):
+        "设置类路径"
+        self.__classPath=path
     def dealAccess(self,fullUrl,data=None):
         "处理访问"
+        
+        #处理静态资源
+        result,obj=self.__dealStatic(fullUrl)
+        if(result):
+            return obj
+        
         url=fullUrl
         urls=url.split("/")
+        
         if(len(urls)==2):
             key="/index/index"
             methodName=urls[1]
