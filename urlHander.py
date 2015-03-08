@@ -32,9 +32,10 @@ class ClearPycFile():
                     self.__index(filePath)
 
 class TempAction():
-    META={}
-    DATA=""
-    STATUS=['200','ok!']
+    def __init__(self):
+        self.META={}
+        self.DATA=""
+        self.STATUS=['200','ok!']
                     
 class Action():
     "action类"
@@ -75,6 +76,9 @@ class Action():
         "读入文件与渲染模板"
         text=self.__getContentFromFile(path)
         self.DATA=self.__render(text)
+    def _redirect(self,path):
+        self.META['Location']=path
+        self.STATUS=['302','redirect']
         
 class UrlHander():
     "url自动化映射类"
