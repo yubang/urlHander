@@ -8,6 +8,7 @@ url自动化映射函数
 """
 ClearPycFile仅仅为了清除pyc文件
 Action类封装基本的渲染模板和追加内容输出，不建议直接继承，生产环境建议自定义一个类继承该类，然后继承自定义类
+BeforeMiddelAction类封装前置中间件，AfterMiddelAction类封装前置中间件
 UrlHander为自动化加载action类，生产环境建议不要重复创建
 """
 
@@ -44,6 +45,7 @@ class Action():
         self.__templatePath=request['templatePath']
         self.__debug=request['debug']
         self.__actionPath=request['actionPath']
+        self.__env=request['env']
         self.__data={}
         self._obj=data#封装传入的参数
         self._db=data.get("db",None)
@@ -51,18 +53,9 @@ class Action():
         self.STATUS=['200','ok']
         if(self.__debug):
             print "load class Action"
-    def __getContentFromFile(self,actionPath=None):
-        "从文件读取内容"
-        if(actionPath==None):
-            actionPath=self.__actionPath
-        fp=open(self.__templatePath+actionPath,'r')
-        text=fp.read()
-        fp.close()
-        return text
-    def __render(self,data):
+    def __render(self,path):
         "渲染模板"
-        from jinja2 import Template
-        template = Template(data.decode("UTF-8"))
+        template=self.__env.get_template(path)
         data=template.render(self.__data)
         return data
     def _write(self,data):
@@ -74,8 +67,9 @@ class Action():
         self.__data[key]=value
     def _display(self,path=None):
         "读入文件与渲染模板"
-        text=self.__getContentFromFile(path)
-        self.DATA=self.__render(text)
+        if(path==None):
+            path=self.__actionPath
+        self.DATA=self.__render(path)
     def _redirect(self,path):
         self.META['Location']=path
         self.STATUS=['302','redirect']
@@ -85,7 +79,7 @@ class UrlHander():
     def __init__(self):
         self.__setDefaultConfig()
         temp=ClearPycFile(self.__debug,self.__classPath)
-        self.__loadAllClass()
+        
     def __log(self,data):
         "调试信息输出"
         if(self.__debug):
@@ -124,6 +118,11 @@ class UrlHander():
             'png':'image/png',
         }
         
+        from jinja2 import Environment, FileSystemLoader
+        self.__env = Environment(
+            loader = FileSystemLoader(self.__templatePath), 
+            auto_reload = True, #自动重载，调试用
+        )
                     
     def __getObjFromModule(self,module,className):
         "从模块获取类"
@@ -232,7 +231,7 @@ class UrlHander():
                     return True,self.__notFoundMethod()
             else:
                 return False,None
-    def addBeforeExceute(self,method):
+    def addBeforeExecute(self,method):
         "添加中间方法，在函数执行前"
         self.__beforeExecuteMethod.append(method)
     def addAfterExceute(self,method):
@@ -247,6 +246,9 @@ class UrlHander():
     def setClassPath(self,path):
         "设置类路径"
         self.__classPath=path
+    def load(self):
+        "加载模块"
+        self.__loadAllClass()
     def dealAccess(self,fullUrl,data=None):
         "处理访问"
         
@@ -292,13 +294,13 @@ class UrlHander():
             templatePath=self.__templatePath
             debug=self.__debug
             actionPath=key+"/"+methodName+".html"
-            request={'templatePath':self.__templatePath,"debug":debug,'actionPath':actionPath}
+            request={'templatePath':self.__templatePath,"debug":debug,'actionPath':actionPath,'env':self.__env}
             try:
                 dao=obj(request,data)
                 method=getattr(dao,methodName)
-                return self.__useMethodFromUrl(method,data)
             except:
                 "触发404"
-                return self.__notFound()
+                method=self.__notFound()
+            return self.__useMethodFromUrl(method,data)
         else:
             return self.__notFound()

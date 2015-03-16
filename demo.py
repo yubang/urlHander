@@ -5,9 +5,16 @@
 """
 
 from urlHander import UrlHander
+from test import Test
 
 def index():
     dao=UrlHander()
+    
+    dao.setClassPath("classes")
+    #dao.setDebug(False)
+    dao.addBeforeExecute(Test(None).index)
+    dao.load()
+    
     result=dao.dealAccess("/ui/ui/hello")
     print result.DATA
     
