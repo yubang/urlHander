@@ -117,13 +117,12 @@ class UrlHander():
             'jpg':'image/jpeg',
             'png':'image/png',
         }
-        
+    def __setTemplateLoader(self):
         from jinja2 import Environment, FileSystemLoader
         self.__env = Environment(
             loader = FileSystemLoader(self.__templatePath), 
-            auto_reload = True, #自动重载，调试用
-        )
-                    
+            auto_reload = self.__debug, #自动重载，调试用
+        )    
     def __getObjFromModule(self,module,className):
         "从模块获取类"
         if(self.__debug):
@@ -248,6 +247,7 @@ class UrlHander():
         self.__classPath=path
     def load(self):
         "加载模块"
+        self.__setTemplateLoader()
         self.__loadAllClass()
     def dealAccess(self,fullUrl,data=None):
         "处理访问"
